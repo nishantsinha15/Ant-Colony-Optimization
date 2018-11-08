@@ -27,7 +27,7 @@ create_graph(matrix, n)
 
 
 class AntColony:
-    def __init__(self, n, l, alpha, beta, distance, rho, Q):
+    def __init__(self, distance, n = 5, l = 10, alpha = 1, beta = 3, rho = 0.8, Q = 1, iterations = 100):
         self.tau = [[0 for i in range(n)] for j in range(n)]
         self.cities = n
         self.ants = l
@@ -40,6 +40,7 @@ class AntColony:
         self.visited = [[] for i in range(l)]
         self.rho = rho
         self.Q = Q
+        self.iterations = iterations
 
     def get_visibility(self):
         visibility = [[0 for i in range(n)] for j in range(n)]
@@ -81,3 +82,16 @@ class AntColony:
                     if (i,j) in self.path[ant_id] or (j,i) in self.path[ant_id]:
                         delta += self.Q/self.tour_length[ant_id]
                 self.tau[i][j] = self.rho*self.tau[i][j] + delta
+
+    def reset(self):
+        return None
+
+    def solve(self):
+        for i in range(self.iterations):
+            self.reset()
+            for ant_id in range(self.ants):
+                self.ant(ant_id)
+            self.update_tau()
+            print(self.tour_length)
+        i = np.argmin(self.tour_length)
+        print(self.path[i])
