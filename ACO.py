@@ -1,3 +1,5 @@
+import math
+
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,9 +27,8 @@ create_graph(matrix, n)
 
 
 class AntColony:
-    def __init__(self, n, l, alpha, beta, distance):
+    def __init__(self, n, l, alpha, beta, distance, rho, Q):
         self.tau = [[0 for i in range(n)] for j in range(n)]
-        self.probability = [[[0 for i in range(n)] for j in range(n)] for i in range(l)]  # probability[ant][i][j]
         self.cities = n
         self.ants = l
         self.alpha = alpha
@@ -36,6 +37,9 @@ class AntColony:
         self.visibility = self.get_visibility()
         self.tour_length = [0 for i in range(l)]
         self.path = [[] for i in range(l)]
+        self.visited = [[] for i in range(l)]
+        self.rho = rho
+        self.Q = Q
 
     def get_visibility(self):
         visibility = [[0 for i in range(n)] for j in range(n)]
@@ -47,12 +51,33 @@ class AntColony:
 
     def ant(self, ant_id):
         prev_city = np.random.randint(0, high = self.cities)
-        next_city = None
         distance = 0
+        self.visited[ant_id].append(prev_city)
         for i in range(self.cities):
-            next_city = move(prev_city, ant_id)
+            next_city = self.move(prev_city, ant_id)
             distance += self.distance[prev_city][next_city]
+            self.path[ant_id].append((prev_city, next_city))
+            self.visited[ant_id].append(next_city)
         self.tour_length[ant_id] = distance
 
+    def move(self, prev_city, ant_id):
+        probability = [0 for i in range(self.cities)]
+        for j in range(self.cities):
+            if j not in self.visited[ant_id]:
+                probability[j] = math.power(self.tau[ant_id][prev_city][j], self.alpha) * math.power(
+                    self.visibility[ant_id][prev_city][j], self.beta)
+            else:
+                probability[j] = 0
+        next_city = np.random.choice(a = [i for i in range(self.cities)], p = probability)
+        return next_city
 
-
+    def update_tau(self):
+        for i in range(self.cities):
+            for j in range(self.cities):
+                if i == j:
+                    continue
+                delta = 0
+                for ant_id in range(self.ants):
+                    if (i,j) in self.path[ant_id] or (j,i) in self.path[ant_id]:
+                        delta += self.Q/self.tour_length[ant_id]
+                self.tau[i][j] = self.rho*self.tau[i][j] + delta
